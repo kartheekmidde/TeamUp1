@@ -1,0 +1,225 @@
+﻿@model IEnumerable<TeamUp1.Models.Event>
+<script src="http://code.jquery.com/jquery-latest.min.js" type="text/javascript"></script>
+
+@{
+    ViewBag.Title = "Index";
+}
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
+
+        @*<h2>Index</h2>*@
+        <br />
+        <p>
+            @Html.ActionLink("Create New", "Create")
+        </p>
+        <table class="table table-condensed">
+            <tr style="background-color: darkgray; color: black;">
+                <th></th>
+                <th>Date</th>
+                <th>From Time</th>
+                <th>To Time</th>
+                <th>Player</th>
+                <th>Address</th>
+                <th style="display: none">Latitude</th>
+                <th style="display: none">Longitude</th>
+                <th style="display: none">Id</th>
+                <th>Temp.</th>
+                <th></th>
+
+            </tr>
+
+            @foreach (var item1 in Model.OrderBy(u => u.eventName).GroupBy(x => x.eventName).Select(g => g.First().eventName))
+            {
+                <tr>
+                    <th colspan="8" style="background-color: navajowhite">@item1</th>
+                </tr>
+                foreach (var item2 in Model.OrderBy(u => u.eventDate.Date).Where(h => h.eventName.Equals(item1)).GroupBy(x => x.eventDate.Date).Select(g => g.First().eventDate.Date))
+                {
+                    //var value2 = Model.OrderBy(u => u.fromTime).ThenBy(v => v.toTime).Where(y => y.eventDate.Equals(item2) && y.eventName.Equals(item1)).Count();
+
+                    foreach (var item in Model.OrderBy(u => u.fromTime.TimeOfDay).ThenBy(v => v.toTime.TimeOfDay).ThenBy(v => v.address).ThenBy(v => v.player).Where(y => y.eventDate.Equals(item2) && y.eventName.Equals(item1)))
+                    {
+                        <tr style="color: white;">
+                            <td></td>
+                            <td style="display: none">@item1</td>
+                            <td>@Html.DisplayFor(modelItem => item.eventDate)</td>
+                            <td>@Html.DisplayFor(modelItem => item.fromTime)</td>
+                            <td>@Html.DisplayFor(modelItem => item.toTime)</td>
+                            <td>@Html.DisplayFor(modelItem => item.player)</td>
+                            <td>@Html.DisplayFor(modelItem => item.address)</td>
+                            <td style="display: none">@Html.DisplayFor(modelItem => item.latitude)</td>
+                            <td style="display: none">@Html.DisplayFor(modelItem => item.longitude)</td>
+                            <td style="display: none">@Html.DisplayFor(modelItem => item.Id)</td>
+                            @if ((@item.eventDate - DateTime.Now).TotalDays < 7)
+                        {
+                                <td>@item.getWeather(@item.latitude, @item.longitude, @item.eventDate)</td>
+                            }
+                            else
+                            {
+                                <td>Data unavailable.</td>
+                            }
+                            <td>
+                                @if (User.Identity.Name == item.player)
+                                {
+                                    <button class="btn btn-default btn-xs" onclick="if(confirm('Confirm delete item?')) deleteItem(@item.Id)">Delete</button>
+                                            }
+                                            else
+                                            {
+                                                //var value2 = 1;
+                                                var value2 = Model
+                                                                .Where(y => y.eventDate.Date.Equals(item2.Date)
+                                                                 && y.fromTime.TimeOfDay.Equals(item.fromTime.TimeOfDay)
+                                                                 && y.toTime.TimeOfDay.Equals(item.toTime.TimeOfDay)
+                                                                 && y.player.Equals(User.Identity.Name)
+                                                                 && y.address.Equals(item.address))
+                                                                .Count();
+                                            if (value2 == 0)
+                                            {
+                                            <buton class="btn btn-primary btn-xs" onclick="if(confirm('Confirm sign up?')) signUp(this)">Sign Up</buton>
+                                            }
+                                }
+                            </td>
+                        </tr>
+
+                    }
+                }
+            }
+        </table>
+
+        <div id="map" style="border:double"></div>
+<style>
+    #map {
+        height: 300px;
+    }
+    body{
+        background-image: url("http://hdwallpaperbackgrounds.net/wp-content/uploads/2016/11/background-image-2.jpg");
+    }
+</style>
+
+<script type="text/javascript">
+    
+    function attachDisplayMessage(marker, displayMessage) {
+        var infowindow = new google.maps.InfoWindow({
+            content: displayMessage
+        });
+        marker.addListener('click', function() {
+            infowindow.open(marker.get('map'), marker);
+        });
+    }
+
+    function signUp(buttonObj){
+
+        var test = $(buttonObj).parent().parent();
+
+        var Id = "0";
+        var eventName = $(':nth-child(2)', test).text();
+        var eventDate = $(':nth-child(3)', test).text();
+    
+        var fromTime = $(':nth-child(4)', test).text();
+        var toTime = $(':nth-child(5)', test).text();
+        var address = $(':nth-child(7)', test).text();
+        var latitude = $(':nth-child(8)', test).text();
+        var longitude = $(':nth-child(9)', test).text();
+
+        var player = "@HttpContext.Current.User.Identity.Name";
+
+        var event = {
+            Id: Id,
+            player: player,
+            eventName: eventName,
+            eventDate: eventDate,
+            fromTime: fromTime,
+            toTime: toTime,
+            address: address,
+            latitude: latitude,
+            longitude: longitude
+        };
+
+        $.ajax({
+            url: "/Events/SignUp/",
+            dataType: 'json',
+            contentType: 'application/json',
+            data: JSON.stringify(event),
+            method: 'POST',
+            success: function () {
+                location.reload();
+            },
+            error: function (xhr, status, error) {
+                console.log("Error in adding event.");
+            }
+        });
+    }
+
+    function deleteItem(Id) {
+
+        var event = {
+            id: Id,
+        };
+        $.ajax({
+            url: "/Events/deleteItem/",
+            dataType: 'json',
+            contentType: 'application/json',
+            data: JSON.stringify(event),
+            method: 'POST',
+            success: function () {
+                location.reload();
+            },
+            error: function (xhr, status, error) {
+                console.log("Error in adding event.");
+            }
+        });
+    }
+
+    
+    function initMap()
+    {
+        var map;
+        map = new google.maps.Map(document.getElementById('map'));
+
+        var pos =
+            {
+                lat: 39.1425,
+                lng: -84.516
+            };
+
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(function (position) {
+                pos =
+                {
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude
+                };
+            });
+        } 
+
+        var im = 'http://maps.google.com/mapfiles/ms/micons/blue-dot.png';
+        var marker = new google.maps.Marker({ map: map, animation: google.maps.Animation.BOUNCE });
+
+        marker.setPosition(pos);
+        marker.setIcon(im);
+        marker.setTitle("My location!");
+                        
+        map.setZoom(10);
+
+        map.setCenter(pos);
+        map.setMapTypeId(google.maps.MapTypeId.ROADMAP);
+
+
+        var InfoWindowContent = [];
+        var i = 0;
+        @foreach (var e in Model)
+        {
+            if (@e.latitude == null || @e.longitude == null)
+            {
+
+            } else { 
+            <text>var loc = new google.maps.LatLng(@e.latitude, @e.longitude, false);
+            marker = new google.maps.Marker({ map: map, position: loc });
+            InfoWindowContent[i] = '@e.address';
+            attachDisplayMessage(marker, InfoWindowContent[i]);
+            i = i + 1;</text>
+            }
+        }
+    }
+</script>
+
+<script src="https://maps.googleapis.com/maps/api/js?v=3.exp&key=AIzaSyD_r1iAegOuFVUvvEDsVACcx6EOgRJx-AI&signed_in=true&libraries=places&sensor=true&callback=initMap" async defer></script>

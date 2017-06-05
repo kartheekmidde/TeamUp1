@@ -1,0 +1,135 @@
+﻿@model TeamUp1.Models.Event
+
+@{
+    ViewBag.Title = "Create";
+}
+<style>
+ body{
+     background-image: url("http://hdwallpaperbackgrounds.net/wp-content/uploads/2016/11/background-image-2.jpg");
+ }
+</style>
+
+@using (Html.BeginForm()) 
+{
+    @Html.AntiForgeryToken()
+    
+    <div class="form-horizontal" style="color: tan;">
+        <h4>Create Event</h4>
+        <hr />
+        @Html.HiddenFor(model => model.player)
+
+        <div class="form-group">
+            @Html.LabelFor(model => model.eventName, htmlAttributes: new { @class = "control-label col-md-2" })
+            <div class="col-md-10">
+                @Html.EnumDropDownListFor(model => model.eventName, htmlAttributes: new { @class = "form-control" })
+                @Html.ValidationMessageFor(model => model.eventName, "", new { @class = "text-danger" })
+            </div>
+        </div>
+
+        <div class="form-group">
+            @Html.LabelFor(model => model.eventDate, htmlAttributes: new { @class = "control-label col-md-2" })
+            <div class="col-md-10">
+                @*@Html.TextBoxFor(model => model.eventDate, "{0:d MMM yyyy}", new { htmlAttributes = new { @class = "form-control" } })*@
+                @Html.EditorFor(model => model.eventDate, new { htmlAttributes = new { @class = "form-control", maxlength = 10 } })
+                @Html.ValidationMessageFor(model => model.eventDate, "", new { @class = "text-danger" })
+            </div>
+        </div>
+
+        <div class="form-group">
+            @Html.LabelFor(model => model.fromTime, htmlAttributes: new { @class = "control-label col-md-2" })
+            <div class="col-md-10">
+                @Html.EditorFor(model => model.fromTime, new { htmlAttributes = new { @class = "form-control" } })
+                @Html.ValidationMessageFor(model => model.fromTime, "", new { @class = "text-danger" })
+            </div>
+        </div>
+
+        <div class="form-group">
+            @Html.LabelFor(model => model.toTime, htmlAttributes: new { @class = "control-label col-md-2" })
+            <div class="col-md-10">
+                @Html.EditorFor(model => model.toTime, new { htmlAttributes = new { @class = "form-control" } })
+                @Html.ValidationMessageFor(model => model.toTime, "", new { @class = "text-danger" })
+            </div>
+        </div>
+
+        <div class="form-group">
+            @Html.LabelFor(model => model.address, htmlAttributes: new { @class = "control-label col-md-2" })
+            <div class="col-md-10">
+                @Html.EditorFor(model => model.address, new { htmlAttributes = new { @class = "form-control", id = "address"} })
+                @Html.ValidationMessageFor(model => model.address, "", new { @class = "text-danger" })
+                @*<label id="lblResult" />*@
+            </div>
+        </div>
+        <div class="form-group">
+            <div class="col-md-2" style="text-align: right">
+                <strong>Latitude</strong>
+            </div>
+            <div class="col-md-3">
+                @Html.EditorFor(model => model.latitude, new { htmlAttributes = new { @class = "form-control", id = "add_latitude", @readonly = "readonly" } })
+                @Html.ValidationMessageFor(model => model.latitude, "", new { @class = "text-danger" })
+            </div>
+        </div>
+
+        <div class="form-group"  id="long_div">
+            <div class="col-md-2" style="text-align: right">
+                <strong>Longitude</strong>
+            </div>
+            <div class="col-md-10">
+                @Html.EditorFor(model => model.longitude, new { htmlAttributes = new { @class = "form-control", id = "add_longitude", @readonly = "readonly" } })
+                @Html.ValidationMessageFor(model => model.longitude, "", new { @class = "text-danger" })
+            </div>
+        </div>
+
+
+        <div class="form-group">
+            <div class="col-md-offset-2 col-md-10">
+                <input type="submit" value="Create" class="btn btn-default" id="createButton"/>
+            </div>
+        </div>
+    </div>
+}
+
+<div>
+    @Html.ActionLink("Back to List", "Index")
+</div>
+
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD_r1iAegOuFVUvvEDsVACcx6EOgRJx-AI&sensor=false&amp;libraries=places" type="text/javascript"></script>
+
+
+@section scripts {
+    @Scripts.Render("~/bundles/jqueryval")
+
+    <section class="scripts">
+
+        <script type="text/javascript">
+
+            $(document).ready(function () {
+                $("#createButton").prop("disabled", true);
+                Initialize();
+            });
+
+            function Initialize() {
+
+                google.maps.event.addDomListener(window, 'load', initialize);
+                function initialize() {
+                    var autocomplete = new google.maps.places.Autocomplete(document.getElementById('address'));
+                    google.maps.event.addListener(autocomplete, 'place_changed',
+                        function () {
+                            $("#createButton").prop("disabled", false);
+
+                            // Get the place details from the autocomplete object.
+                            var place = autocomplete.getPlace();
+                            var lat = place.geometry.location.lat();
+                            var long = place.geometry.location.lng();
+
+                            $("#add_latitude").val(lat);
+                            $("#add_longitude").val(long);
+                        });
+                }
+            }
+    </script>
+</section>
+}
+
+
+
+
